@@ -1,92 +1,103 @@
-# EtharaAI_FullStack
+# Email Automation System
 
-Email Automation System
-Overview
+## Overview
 
-The Email Automation System is an AI-powered application designed to generate and send personalized emails automatically based on user data. It uses local large language models (LLMs) through Ollama to create dynamic, context-aware email content. The system supports bulk data processing and is suitable for marketing, HR communication, and automated notifications.
+The Email Automation System is an AI-powered application that generates and sends personalized emails automatically based on user data. It uses local large language models (LLMs) through Ollama to create dynamic email content. The system supports bulk email generation and is useful for automation in marketing, HR communication, and notifications.
 
-Features
-Automated email generation using AI models
-Personalized email content based on user data
-Support for multiple LLMs (Mistral, Llama3, Phi3)
-Model fallback mechanism for reliability
-Bulk email generation from Excel/CSV files
-Flask-based backend API
-Integration with SMTP for email sending
-Lightweight local execution using Ollama
-Tech Stack
-Python
-Flask
-Ollama (Mistral, Llama3, Phi3)
-Pandas
-NumPy
-OpenPyXL
-SMTP (Email Service)
-dotenv
-Project Structure
+---
+
+## Features
+
+- Automated email generation using AI models  
+- Personalized content based on user data  
+- Multiple LLM support (Mistral, Llama3, Phi3)  
+- Automatic fallback between models  
+- Bulk email generation from Excel/CSV files  
+- Flask-based backend API  
+- SMTP email sending integration  
+- Local execution using Ollama  
+
+---
+
+## Tech Stack
+
+- Python  
+- Flask  
+- Ollama (Mistral, Llama3, Phi3)  
+- Pandas  
+- NumPy  
+- OpenPyXL  
+- SMTP  
+- dotenv  
+
+---
+
+## Project Structure
+
+
 email-automation/
 │
 ├── backend/
-│   ├── app.py
-│   ├── email_generator.py
-│   ├── models.py
-│   ├── utils.py
-│   └── config.py
+│ ├── app.py
+│ ├── email_generator.py
+│ ├── models.py
+│ ├── utils.py
+│ └── config.py
 │
 ├── data/
-│   └── input.xlsx
+│ └── input.xlsx
 │
 ├── templates/
-│   └── email_template.html
+│ └── email_template.html
 │
 ├── requirements.txt
 ├── .env
 └── README.md
-Installation
-Step 1: Clone the Repository
+
+
+---
+
+## Installation
+
+### Clone Repository
+```bash
 git clone https://github.com/your-username/email-automation.git
 cd email-automation
-Step 2: Create Virtual Environment
+Create Virtual Environment
 python -m venv venv
-venv\Scripts\activate   (Windows)
-Step 3: Install Dependencies
+venv\Scripts\activate
+Install Dependencies
 pip install -r requirements.txt
-Setup Ollama Models
+Ollama Setup
 
 Install Ollama and pull required models:
 
 ollama pull mistral
 ollama pull llama3
 ollama pull phi3
-Running the Project
-
-Navigate to backend and start the server:
-
+Run Project
 cd backend
 python app.py
 
-The application will run at:
+Server runs at:
 
 http://127.0.0.1:5000
 Workflow
-Input data is provided in Excel/CSV format
-Backend processes and extracts user information
-AI model generates personalized email content
-Email is sent using SMTP configuration
-Logs are maintained for tracking and debugging
-Model Selection Strategy
-
-The system uses multiple models for better reliability:
-
-Mistral: Fast and balanced performance
+User provides input data (Excel/CSV)
+System processes the data
+AI model generates email content
+Email is sent via SMTP
+Logs are stored for tracking
+Model Strategy
+Mistral: Fast and balanced output
 Llama3: High-quality detailed responses
-Phi3: Lightweight and efficient processing
+Phi3: Lightweight and quick processing
 
-If one model fails, the system automatically switches to another.
+Automatic fallback ensures reliability.
 
 Environment Variables
 
-Create a .env file in the root directory:
+Create a .env file:
 
 EMAIL_USER=your_email@example.com
 EMAIL_PASS=your_password
@@ -94,13 +105,13 @@ SMTP_SERVER=smtp.gmail.com
 SMTP_PORT=587
 OLLAMA_URL=http://localhost:11434
 Use Cases
-Automated marketing email campaigns
-HR recruitment and outreach emails
+Marketing email automation
+HR outreach emails
 Bulk notification systems
-Personalized communication automation
+Personalized email campaigns
 Future Improvements
-Web dashboard for monitoring email campaigns
+Web dashboard for email tracking
 Email scheduling system
-MongoDB cloud integration
-Analytics for open rate and engagement tracking
-Multi-language email generation
+MongoDB integration
+Analytics for open/click rates
+Multi-language support
