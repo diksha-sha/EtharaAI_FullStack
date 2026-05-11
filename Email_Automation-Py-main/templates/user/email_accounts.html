@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Email Accounts</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="logo-icon">📧</div>
+                    <div><h2>Email System</h2><span>User Panel</span></div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    <a href="/user" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+                    <a href="/user/email-accounts" class="nav-item active"><span class="nav-icon">📧</span><span>My Email IDs</span></a>
+                    <a href="/user/upload" class="nav-item"><span class="nav-icon">📂</span><span>Upload Excel</span></a>
+                    <a href="/user/compose" class="nav-item"><span class="nav-icon">✉️</span><span>Compose Email</span></a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Account</div>
+                    <a href="/user/signature" class="nav-item"><span class="nav-icon">📝</span><span>Signature</span></a>
+                    <a href="/user/logs" class="nav-item"><span class="nav-icon">📋</span><span>Logs</span></a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-card">
+                    <div class="user-avatar">{{ session.get('username', 'U')[0]|upper }}</div>
+                    <div class="user-info">
+                        <div class="name">{{ session.get('username', 'User') }}</div>
+                        <div class="role">User</div>
+                    </div>
+                </div>
+                <a href="/logout" class="logout-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h1 class="page-title">📧 My Email Accounts</h1>
+            </header>
+
+            <div class="content-container">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Email Accounts</h2>
+                        <button class="btn btn-primary btn-sm" onclick="showAddModal()">+ Add Email Account</button>
+                    </div>
+
+                    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 20px;">
+                        Add your email accounts here. These will be available as sender options when composing emails. 
+                        Supports all email providers (Gmail, Outlook, Yahoo, etc.). Use app password if required by your provider.
+                    </p>
+
+                    {% if email_accounts %}
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Email Address</th>
+                                    <th>Password</th>
+                                    <th>Sender Name</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ea in email_accounts %}
+                                <tr>
+                                    <td><strong>{{ ea.email }}</strong></td>
+                                    <td><code style="background: var(--bg-light); padding: 4px 8px; border-radius: 4px;">{{ ea.password }}</code></td>
+                                    <td>{{ ea.sender_name }}</td>
+                                    <td>
+                                        <button class="action-btn" onclick='editAccount({{ ea | tojson }})'>Edit</button>
+                                        <button class="action-btn danger" onclick="deleteAccount('{{ ea._id }}')">Delete</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <h3>No email accounts added</h3>
+                        <p>Add your first email account to start sending emails.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="accountModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="accountModalTitle">Add Email Account</h3>
+                <button class="close-btn" onclick="closeAccountModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="accountId">
+                <div class="form-group">
+                    <label for="accountEmail">Email Address</label>
+                    <input type="email" id="accountEmail" class="form-control" placeholder="e.g., your@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="accountPassword">Password / App Password</label>
+                    <input type="text" id="accountPassword" class="form-control" placeholder="Enter password or app password">
+                    <small style="color: var(--text-muted); font-size: 12px;">For Gmail, use an App Password if 2FA is enabled.</small>
+                </div>
+                <div class="form-group">
+                    <label for="accountSenderName">Sender Name</label>
+                    <input type="text" id="accountSenderName" class="form-control" placeholder="e.g., John Doe">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAccountModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveAccount()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        function showAddModal() {
+            document.getElementById('accountModalTitle').textContent = 'Add Email Account';
+            document.getElementById('accountId').value = '';
+            document.getElementById('accountEmail').value = '';
+            document.getElementById('accountPassword').value = '';
+            document.getElementById('accountSenderName').value = '';
+            document.getElementById('accountModal').classList.add('active');
+        }
+
+        function editAccount(account) {
+            document.getElementById('accountModalTitle').textContent = 'Edit Email Account';
+            document.getElementById('accountId').value = account._id;
+            document.getElementById('accountEmail').value = account.email;
+            document.getElementById('accountPassword').value = account.password;
+            document.getElementById('accountSenderName').value = account.sender_name;
+            document.getElementById('accountModal').classList.add('active');
+        }
+
+        function closeAccountModal() {
+            document.getElementById('accountModal').classList.remove('active');
+        }
+
+        async function saveAccount() {
+            const id = document.getElementById('accountId').value;
+            const email = document.getElementById('accountEmail').value.trim();
+            const password = document.getElementById('accountPassword').value.trim();
+            const senderName = document.getElementById('accountSenderName').value.trim();
+
+            if (!email || !password || !senderName) {
+                showToast('Please fill all fields', 'error');
+                return;
+            }
+
+            try {
+                let url, method;
+                if (id) {
+                    url = `/api/user/email-accounts/${id}`;
+                    method = 'PUT';
+                } else {
+                    url = '/api/user/email-accounts';
+                    method = 'POST';
+                }
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, sender_name: senderName })
+                });
+
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (parseError) {
+                    showToast(text || 'Error saving', 'error');
+                    return;
+                }
+
+                if (data.success) {
+                    showToast(id ? 'Account updated' : 'Account added', 'success');
+                    closeAccountModal();
+                    location.reload();
+                } else {
+                    showToast(data.error || 'Error saving', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteAccount(accountId) {
+            if (!confirm('Are you sure you want to delete this email account?')) return;
+
+            try {
+                const response = await fetch(`/api/user/email-accounts/${accountId}`, { method: 'DELETE' });
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (parseError) {
+                    showToast(text || 'Error deleting', 'error');
+                    return;
+                }
+                if (data.success) {
+                    showToast('Account deleted', 'success');
+                    location.reload();
+                } else {
+                    showToast(data.error || 'Error deleting', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icons = { success: '✓', error: '✕', info: 'ℹ' };
+            toast.innerHTML = `<span>${icons[type] || icons.info}</span> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

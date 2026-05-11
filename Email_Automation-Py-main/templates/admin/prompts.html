@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Management - Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="logo-icon">📧</div>
+                    <div><h2>Admin Panel</h2><span>Email System</span></div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    <a href="/admin" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+                    <a href="/admin/email-accounts" class="nav-item"><span class="nav-icon">📧</span><span>My Email IDs</span></a>
+                    <a href="/admin/upload" class="nav-item"><span class="nav-icon">📂</span><span>Upload Excel</span></a>
+                    <a href="/admin/compose" class="nav-item"><span class="nav-icon">✉️</span><span>Compose Email</span></a>
+                    <a href="/admin/users" class="nav-item"><span class="nav-icon">👥</span><span>User Management</span></a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Configuration</div>
+                    <a href="/admin/prompts" class="nav-item active"><span class="nav-icon">📝</span><span>Prompts</span></a>
+                    <a href="/admin/cc-emails" class="nav-item"><span class="nav-icon">📨</span><span>CC Emails</span></a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Monitoring</div>
+                    <a href="/admin/logs" class="nav-item"><span class="nav-icon">📋</span><span>Logs</span></a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-card">
+                    <div class="user-avatar">{{ session.get('username', 'A')[0]|upper }}</div>
+                    <div class="user-info">
+                        <div class="name">{{ session.get('username', 'Admin') }}</div>
+                        <div class="role">Administrator</div>
+                    </div>
+                </div>
+                <a href="/logout" class="logout-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h1 class="page-title">📝 Prompt Management</h1>
+            </header>
+
+            <div class="content-container">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Global Prompts</h2>
+                        <button class="btn btn-primary btn-sm" onclick="showAddPromptModal()">+ Add Prompt</button>
+                    </div>
+                    {% if prompts %}
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Template Preview</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="promptsBody">
+                                {% for prompt in prompts %}
+                                <tr>
+                                    <td>{{ prompt.id }}</td>
+                                    <td><strong>{{ prompt.name }}</strong></td>
+                                    <td style="max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ prompt.template[:100] }}...</td>
+                                    <td>
+                                        <button class="action-btn" onclick='editPrompt({{ prompt | tojson }})'>Edit</button>
+                                        <button class="action-btn danger" onclick="deletePrompt({{ prompt.id }})">Delete</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state"><div class="empty-state-icon">📭</div><h3>No prompts found</h3></div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Prompt Modal -->
+    <div id="promptModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="promptModalTitle">Add New Prompt</h3>
+                <button class="close-btn" onclick="closePromptModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="promptId">
+                <div class="form-group">
+                    <label for="promptName">Prompt Name</label>
+                    <input type="text" id="promptName" class="form-control" placeholder="Enter prompt name">
+                </div>
+                <div class="form-group">
+                    <label for="promptTemplate">Prompt Template</label>
+                    <textarea id="promptTemplate" rows="12" class="form-control" placeholder="Enter prompt template... Use {requirement} for requirement data"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePromptModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="savePrompt()">Save Prompt</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        function showAddPromptModal() {
+            document.getElementById('promptModalTitle').textContent = 'Add New Prompt';
+            document.getElementById('promptId').value = '';
+            document.getElementById('promptName').value = '';
+            document.getElementById('promptTemplate').value = '';
+            document.getElementById('promptModal').classList.add('active');
+        }
+
+        function editPrompt(prompt) {
+            document.getElementById('promptModalTitle').textContent = 'Edit Prompt';
+            document.getElementById('promptId').value = prompt.id;
+            document.getElementById('promptName').value = prompt.name;
+            document.getElementById('promptTemplate').value = prompt.template;
+            document.getElementById('promptModal').classList.add('active');
+        }
+
+        function closePromptModal() {
+            document.getElementById('promptModal').classList.remove('active');
+        }
+
+        async function savePrompt() {
+            const id = document.getElementById('promptId').value;
+            const name = document.getElementById('promptName').value.trim();
+            const template = document.getElementById('promptTemplate').value.trim();
+
+            if (!name || !template) {
+                showToast('Please fill all fields', 'error');
+                return;
+            }
+
+            try {
+                let url, method;
+                if (id) {
+                    url = `/api/prompts/${id}`;
+                    method = 'PUT';
+                } else {
+                    url = '/api/prompts';
+                    method = 'POST';
+                }
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, template })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showToast(id ? 'Prompt updated successfully' : 'Prompt added successfully', 'success');
+                    closePromptModal();
+                    location.reload();
+                } else {
+                    showToast(data.error || 'Error saving prompt', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function deletePrompt(promptId) {
+            if (!confirm('Are you sure you want to delete this prompt?')) return;
+
+            try {
+                const response = await fetch(`/api/prompts/${promptId}`, { method: 'DELETE' });
+                const data = await response.json();
+                if (data.success) {
+                    showToast('Prompt deleted', 'success');
+                    location.reload();
+                } else {
+                    showToast(data.error || 'Error deleting prompt', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icons = { success: '✓', error: '✕', info: 'ℹ' };
+            toast.innerHTML = `<span>${icons[type] || icons.info}</span> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

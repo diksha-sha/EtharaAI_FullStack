@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Logs</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="logo-icon">📧</div>
+                    <div><h2>Email System</h2><span>User Panel</span></div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    <a href="/user" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+                    <a href="/user/email-accounts" class="nav-item"><span class="nav-icon">📧</span><span>My Email IDs</span></a>
+                    <a href="/user/upload" class="nav-item"><span class="nav-icon">📂</span><span>Upload Excel</span></a>
+                    <a href="/user/compose" class="nav-item"><span class="nav-icon">✉️</span><span>Compose Email</span></a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Account</div>
+                    <a href="/user/signature" class="nav-item"><span class="nav-icon">📝</span><span>Signature</span></a>
+                    <a href="/user/logs" class="nav-item active"><span class="nav-icon">📋</span><span>Logs</span></a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-card">
+                    <div class="user-avatar">{{ session.get('username', 'U')[0]|upper }}</div>
+                    <div class="user-info">
+                        <div class="name">{{ session.get('username', 'User') }}</div>
+                        <div class="role">User</div>
+                    </div>
+                </div>
+                <a href="/logout" class="logout-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h1 class="page-title">📋 My Email Logs</h1>
+            </header>
+
+            <div class="content-container">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Email History</h2>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="statusFilter" class="form-control" style="width: auto;" onchange="applyFilters()">
+                                <option value="">All Status</option>
+                                <option value="sent" {% if request.args.get('status') == 'sent' %}selected{% endif %}>Sent</option>
+                                <option value="failed" {% if request.args.get('status') == 'failed' %}selected{% endif %}>Failed</option>
+                            </select>
+                            <button class="btn btn-sm btn-secondary" onclick="clearFilters()">Clear</button>
+                        </div>
+                    </div>
+
+                    {% if logs %}
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Recipient</th>
+                                    <th>Subject</th>
+                                    <th>Sender Email</th>
+                                    <th>CC</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr>
+                                    <td>{{ log.recipient_email or '-' }}</td>
+                                    <td>{{ (log.subject or '-')[:50] }}{% if log.subject and log.subject|length > 50 %}...{% endif %}</td>
+                                    <td>{{ log.sender_email or '-' }}</td>
+                                    <td>{{ log.cc_email or '-' }}</td>
+                                    <td><span class="status-badge status-{{ log.status }}">{{ log.status }}</span></td>
+                                    <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M') if log.created_at else '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p style="margin-top: 15px; color: var(--text-muted); font-size: 13px;">Showing {{ logs|length }} logs</p>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <h3>No logs found</h3>
+                        <p>Email logs will appear here once you send emails.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        function applyFilters() {
+            const status = document.getElementById('statusFilter').value;
+            let url = '/user/logs?';
+            if (status) url += 'status=' + status;
+            window.location.href = url;
+        }
+
+        function clearFilters() {
+            window.location.href = '/user/logs';
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icons = { success: '✓', error: '✕', info: 'ℹ' };
+            toast.innerHTML = `<span>${icons[type] || icons.info}</span> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

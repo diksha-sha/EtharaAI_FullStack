@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="logo-icon">📧</div>
+                    <div>
+                        <h2>Admin Panel</h2>
+                        <span>Email System</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    <a href="/admin" class="nav-item">
+                        <span class="nav-icon">📊</span>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="/admin/email-accounts" class="nav-item">
+                        <span class="nav-icon">📧</span>
+                        <span>My Email IDs</span>
+                    </a>
+                    <a href="/admin/upload" class="nav-item">
+                        <span class="nav-icon">📂</span>
+                        <span>Upload Excel</span>
+                    </a>
+                    <a href="/admin/compose" class="nav-item">
+                        <span class="nav-icon">✉️</span>
+                        <span>Compose Email</span>
+                    </a>
+                    <a href="/admin/users" class="nav-item active">
+                        <span class="nav-icon">👥</span>
+                        <span>User Management</span>
+                    </a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Configuration</div>
+                    <a href="/admin/prompts" class="nav-item">
+                        <span class="nav-icon">📝</span>
+                        <span>Prompts</span>
+                    </a>
+                    <a href="/admin/cc-emails" class="nav-item">
+                        <span class="nav-icon">📨</span>
+                        <span>CC Emails</span>
+                    </a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Monitoring</div>
+                    <a href="/admin/logs" class="nav-item">
+                        <span class="nav-icon">📋</span>
+                        <span>Logs</span>
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-card">
+                    <div class="user-avatar">{{ session.get('username', 'A')[0]|upper }}</div>
+                    <div class="user-info">
+                        <div class="name">{{ session.get('username', 'Admin') }}</div>
+                        <div class="role">Administrator</div>
+                    </div>
+                </div>
+                <a href="/logout" class="logout-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <h1 class="page-title">👥 User Management</h1>
+                <div class="header-actions">
+                    <span style="color: var(--text-secondary); font-size: 14px;">{{ users|length }} users registered</span>
+                </div>
+            </header>
+
+            <div class="content-container">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Registered Users</h2>
+                    </div>
+                    {% if users %}
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Password</th>
+                                    <th>Email Accounts</th>
+                                    <th>Recipients</th>
+                                    <th>Emails Sent</th>
+                                    <th>Registered</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td><strong>{{ user.username }}</strong></td>
+                                    <td><code style="background: var(--bg-light); padding: 4px 8px; border-radius: 4px; font-size: 13px;">{{ user.password }}</code></td>
+                                    <td>{{ user.email_accounts_count }}</td>
+                                    <td>{{ user.recipients_count }}</td>
+                                    <td>{{ user.emails_sent }}</td>
+                                    <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '-' }}</td>
+                                    <td>
+                                        <a href="/admin/users/{{ user._id }}" class="action-btn">View Details</a>
+                                        <button class="action-btn danger" onclick="deleteUser('{{ user._id }}', '{{ user.username }}')">Delete</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <h3>No users found</h3>
+                        <p>Users will appear here once they register.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        async function deleteUser(userId, username) {
+            if (!confirm(`Are you sure you want to delete user "${username}"? This will delete all their data including email accounts, recipients, and logs.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/users/${userId}/delete`, { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('User deleted successfully', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error deleting user', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icons = { success: '✓', error: '✕', info: 'ℹ' };
+            toast.innerHTML = `<span>${icons[type] || icons.info}</span> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
